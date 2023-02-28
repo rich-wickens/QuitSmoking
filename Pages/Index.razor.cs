@@ -6,8 +6,13 @@ namespace QuitSmoking.Pages
     public partial class Index
     {
         public bool ShowCreate { get; set; }
+        public bool EditRecord { get; set; }
+        public int EditingId { get; set; }
+
         private UserDataContext? _context;
+        public User? UserToUpdate { get; set; }
         public User? NewUser { get; set; }
+        public List<User>? OurUsers { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -32,9 +37,20 @@ namespace QuitSmoking.Pages
             }
 
             ShowCreate = false;
+            await ShowUsers();
         }
 
-        public List<User>? OurUsers { get; set; }
+        public async Task ShowEditForm(User ourUser)
+        {
+            _context ??= await UserDataContextFactory.CreateDbContextAsync();
+
+            if(_context is not null)
+            {
+                UserToUpdate = _context.Users.FirstOrDefault(x => x.Id == ourUser.Id);
+                EditingId = ourUser.Id;
+                EditRecord = true;  
+            }
+        }
 
         public async Task ShowUsers()
         {
@@ -44,8 +60,17 @@ namespace QuitSmoking.Pages
             {
                 OurUsers = await _context.Users.ToListAsync();
             }
+        }
 
-            if (_context is not null) await _context.DisposeAsync();
+        public async Task UpdateUser()
+        {
+            _context ??= await UserDataContextFactory.CreateDbContextAsync();
+            if (_context is not null)
+            {
+                if (UserToUpdate is not null) _context.Users.Update(UserToUpdate);
+                await _context.SaveChangesAsync();
+            }
+            EditRecord = false;
         }
     }
 
